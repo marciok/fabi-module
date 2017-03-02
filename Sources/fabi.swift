@@ -9,20 +9,20 @@
 import Foundation
 import JavaScriptCore
 
-enum Token {
+public enum Token {
     case method(HTTPMethod)
     case path(String)
     case body(String)
 }
 
-enum HTTPMethod: String {
+public enum HTTPMethod: String {
     case GET
     case POST
 }
 
 //MARK: Lexing
 
-typealias TokenGenerator = (String) -> Token?
+public typealias TokenGenerator = (String) -> Token?
 
 func tokenizer(input: String) -> [Token] {
     let tokensGenerator: [(String, TokenGenerator)] = [
@@ -96,7 +96,7 @@ public enum ParsingError: Error {
     case incompleteExpression
 }
 
-struct Parser {
+public struct Parser {
     
     let tokens: [Token]
     var index = 0
@@ -417,7 +417,7 @@ struct HTTPRequest {
     }
 }
 
-final class HTTPServer {
+public final class HTTPServer {
     private var sockets = Set<Socket>()
     private var router = Router()
     private let socket: Socket
