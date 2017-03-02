@@ -24,7 +24,7 @@ public enum HTTPMethod: String {
 
 public typealias TokenGenerator = (String) -> Token?
 
-func tokenizer(input: String) -> [Token] {
+public func tokenizer(input: String) -> [Token] {
     let tokensGenerator: [(String, TokenGenerator)] = [
         ("[A-Z][A-Z]*", {
             guard $0 == HTTPMethod.GET.rawValue || $0 == HTTPMethod.POST.rawValue else {
