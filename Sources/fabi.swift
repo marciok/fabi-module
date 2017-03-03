@@ -86,7 +86,7 @@ public func tokenizer(input: String) -> [Token] {
  body: body
  */
 
-struct Handler {
+public struct Handler {
     let request: HTTPRequest
     let response: String
 }
@@ -101,7 +101,7 @@ public struct Parser {
     let tokens: [Token]
     var index = 0
     
-    init(tokens: [Token]) {
+    public init(tokens: [Token]) {
         self.tokens = tokens
     }
     
@@ -137,7 +137,7 @@ public struct Parser {
         return content
     }
     
-    mutating func parseHandler() throws -> [Handler]  {
+    public mutating func parseHandler() throws -> [Handler]  {
         var nodes = [Handler]()
         while index < tokens.count {
             guard case let .method(httpMethod) = try popCurrentToken() else {
@@ -424,7 +424,7 @@ public final class HTTPServer {
     private let handlers: [Handler]
     private var runtime = JSRuntime()
     
-    init(handlers: [Handler]) throws {
+    public init(handlers: [Handler]) throws {
         self.socket = try Socket()
         
         for handler in handlers {
@@ -447,7 +447,7 @@ public final class HTTPServer {
         }
     }
     
-    func start(port: in_port_t = 8080) throws {
+    public func start(port: in_port_t = 8080) throws {
         try socket.bindAndListen(port: port)
         print("Server started at \(port)")
         
@@ -517,4 +517,5 @@ struct HTTPResponse {
     let status: Status
     let content: Content
 }
+
 
