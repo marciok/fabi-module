@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import JavaScriptCore
+// import JavaScriptCore
 
 public enum Token {
     case method(HTTPMethod)
@@ -253,7 +253,11 @@ struct Socket {
     let descriptor: SocketDescriptor
     
     init() throws {
-        descriptor = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        #if os(Linux)
+            descriptor = Glibc.socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+        #else
+            descriptor = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        #endif
         
         var value: Int32 = 1
         if setsockopt(descriptor, SOL_SOCKET, SO_REUSEADDR, &value, socklen_t(MemoryLayout<Int32>.size)) == -1 {
@@ -277,13 +281,22 @@ struct Socket {
             throw SocketError.failed(errnoDescription())
         }
         
-        var address = sockaddr_in(
-            sin_len: UInt8(MemoryLayout<sockaddr_in>.stride),
-            sin_family: UInt8(AF_INET),
-            sin_port: port.bigEndian,
-            sin_addr: in_addr(s_addr: in_addr_t(0)),
-            sin_zero:(0, 0, 0, 0, 0, 0, 0, 0))
+        #if os(Linux)
+            var address = sockaddr_in(
+                sin_family: sa_family_t(AF_INET),
+                sin_port: port.bigEndian,
+                sin_addr: in_addr(s_addr: in_addr_t(0)),
+                sin_zero:(0, 0, 0, 0, 0, 0, 0, 0))
+        #else
+            var address = sockaddr_in(
+                sin_len: UInt8(MemoryLayout<sockaddr_in>.stride),
+                sin_family: UInt8(AF_INET),
+                sin_port: port.bigEndian,
+                sin_addr: in_addr(s_addr: in_addr_t(0)),
+                sin_zero:(0, 0, 0, 0, 0, 0, 0, 0))
+        #endif
         
+
         var bindResult: Int32 = -1
         bindResult = withUnsafePointer(to: &address) {
             bind(descriptor, UnsafePointer<sockaddr>(OpaquePointer($0)), socklen_t(MemoryLayout<sockaddr_in>.size))
@@ -343,7 +356,11 @@ struct Socket {
     private func writeBuffer(_ pointer: UnsafeRawPointer, length: Int) throws {
         var sent = 0
         while sent < length {
-            let s = Darwin.write(descriptor, pointer + sent, Int(length - sent))
+            #if os(Linux)
+                let s = send(self.socketFileDescriptor, pointer + sent, Int(length - sent), Int32(MSG_NOSIGNAL))
+            #else
+                let s = Darwin.write(descriptor, pointer + sent, Int(length - sent))
+            #endif
             if s <= 0 {
                 throw SocketError.failed("could send")
             }
@@ -364,18 +381,28 @@ struct Socket {
     func write(content: Content) throws{
         switch content {
         case .json(let data):
+            #if os(Linux)
+                let data = [UInt8]("Not ready for Linux.".utf8)
+                try write(data: data)
+            #else
             try write(data: data)
+            #endif
         case .html(let text):
             try write(message: text)
         }
     }
     
     func close() throws {
-        guard Darwin.close(descriptor) == 0 else {
-            throw SocketError.failed(errnoDescription())
-        }
+        #if os(Linux)
+            guard Glibc.close(descriptor) == 0 else {
+                throw SocketError.failed(errnoDescription())
+            }
+            #else
+            guard Darwin.close(descriptor) == 0 else {
+                throw SocketError.failed(errnoDescription())
+            }
+        #endif
     }
-    
 }
 
 extension Socket: Hashable, Equatable {
