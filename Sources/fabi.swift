@@ -264,8 +264,13 @@ struct Socket {
             throw SocketError.failed(errnoDescription())
         }
 
-        var no_sig_pipe: Int32 = 1
-        setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &no_sig_pipe, socklen_t(MemoryLayout<Int32>.size))
+        #if os(Linux)
+            // There is no SO_NOSIGPIPE in Linux (nor some other systems). You can instead use the MSG_NOSIGNAL flag when calling send(),
+            // or use signal(SIGPIPE, SIG_IGN) to make your entire application ignore SIGPIPE.
+        #else
+            var no_sig_pipe: Int32 = 1
+            setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &no_sig_pipe, socklen_t(MemoryLayout<Int32>.size))
+        #endif
     }
     
     init(descriptor: SocketDescriptor) {
@@ -357,7 +362,7 @@ struct Socket {
         var sent = 0
         while sent < length {
             #if os(Linux)
-                let s = send(self.socketFileDescriptor, pointer + sent, Int(length - sent), Int32(MSG_NOSIGNAL))
+                let s = send(descriptor, pointer + sent, Int(length - sent), Int32(MSG_NOSIGNAL))
             #else
                 let s = Darwin.write(descriptor, pointer + sent, Int(length - sent))
             #endif
@@ -382,10 +387,9 @@ struct Socket {
         switch content {
         case .json(let data):
             #if os(Linux)
-                let data = [UInt8]("Not ready for Linux.".utf8)
-                try write(data: data)
+                try write(message: "Not ready for Linux")
             #else
-            try write(data: data)
+                try write(data: data)
             #endif
         case .html(let text):
             try write(message: text)
