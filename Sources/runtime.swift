@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import v8Wrap
 // import JavaScriptCore
 
 enum JSRuntimeError: Error {
@@ -35,9 +36,23 @@ struct JSRuntime {
     // }
     
     func evaluate(_ body: String, params: [String: String]) throws -> Content {
+      /*
+      let params = [":x" : "Shalom", ":y" : " World"]
+let paramsDeclaration = params.keys.map{ String($0.characters.dropFirst()) }.joined(separator: ",")
+let body = "return x + y"
+let paramsValue = Array(params.values)
+let jsSource = "(function(\(paramsDeclaration)) { \(body) })" //TODO: Remember there's a v8 function that wraps that call 
+print(jsSource)
+print(paramsValue)
+
+test(jsSource, paramsValue)
+      */
         let paramsDeclaration = params.keys.map{ String($0.characters.dropFirst()) }.joined(separator: ",")
+        let paramsValue = Array(params.values)
         
-        let jsSource = "var mainFunc = function(\(paramsDeclaration)) { \(body) }"
+        let jsSource = "(function(\(paramsDeclaration)) { \(body) })" //TODO: Remember there's a v8 function that wraps that call 
+
+        test(jsSource, paramsValue)
         
         // _ = context.evaluateScript(jsSource)
         
